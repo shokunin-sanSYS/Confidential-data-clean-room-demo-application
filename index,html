@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confidential Data Clean Room</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0e27;
+            color: #e4e9f0;
+            overflow-x: hidden;
+        }
+
+        /* Title Banner Animation */
+        .title-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1f3a 0%, #0a0e27 50%, #2d1b4e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeOutBanner 0.8s ease-in-out 2.5s forwards;
+        }
+
+        @keyframes fadeOutBanner {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        .banner-content {
+            text-align: center;
+            animation: slideInBanner 0.8s ease-out;
+        }
+
+        @keyframes slideInBanner {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .banner-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .banner-subtitle {
+            font-size: 1.4rem;
+            color: #a8b2d1;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .banner-line {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            margin: 1.5rem auto;
+            border-radius: 2px;
+        }
+
+        /* Main App */
+        .app-container {
+            opacity: 0;
+            animation: fadeInApp 0.8s ease-in-out 3.3s forwards;
+        }
+
+        @keyframes fadeInApp {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e2442 0%, #151932 100%);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-item {
+            color: #a8b2d1;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #1e2442 0%, #1a1f3a 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .metric-label {
+            color: #a8b2d1;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.85rem;
+            color: #10b981;
+        }
+
+        .metric-change.negative {
+            color: #ef4444;
+        }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, #1e2442 0%, #1a1f3a 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-title {
+            color: #e4e9f0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.8rem;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            color: #667eea;
+        }
+
+        /* Alert Section */
+        .alert-section {
+            margin-bottom: 2rem;
+        }
+
+        .alert-card {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            animation: alertBlink 2s ease-in-out infinite;
+        }
+
+        @keyframes alertBlink {
+            0%, 100% { opacity: 1; border-color: rgba(239, 68, 68, 0.3); }
+            50% { opacity: 0.7; border-color: rgba(239, 68, 68, 0.6); }
+        }
+
+        .alert-icon {
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            color: #fca5a5;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .alert-message {
+            color: #e4e9f0;
+            font-size: 0.9rem;
+        }
+
+        .alert-time {
+            color: #a8b2d1;
+            font-size: 0.8rem;
+        }
+
+        /* Audit Log */
+        .audit-log {
+            background: linear-gradient(135deg, #1e2442 0%, #1a1f3a 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .log-entry {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .log-entry:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .log-type {
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .log-type.join {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .log-type.aggregate {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .log-type.export {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .log-type.alert {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .log-description {
+            color: #e4e9f0;
+        }
+
+        .log-timestamp {
+            color: #a8b2d1;
+            font-size: 0.85rem;
+        }
+
+        /* Button */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Data Analysis Page */
+        .analysis-controls {
+            background: linear-gradient(135deg, #1e2442 0%, #1a1f3a 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .control-label {
+            color: #a8b2d1;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .control-input {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(10, 14, 39, 0.5);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 6px;
+            color: #e4e9f0;
+            font-size: 0.9rem;
+        }
+
+        .control-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Report Section */
+        .report-section {
+            background: linear-gradient(135deg, #1e2442 0%, #1a1f3a 100%);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .report-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e4e9f0;
+        }
+
+        .report-content {
+            line-height: 1.8;
+            color: #a8b2d1;
+        }
+
+        .report-section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #e4e9f0;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .data-table th {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 1rem;
+            text-align: left;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            color: #e4e9f0;
+        }
+
+        .data-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Processing Animation */
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .processing.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .processing-text {
+            color: #a8b2d1;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Title Banner -->
+    <div class="title-banner">
+        <div class="banner-content">
+            <div class="banner-title">Confidential Data Clean Room</div>
+            <div class="banner-line"></div>
+            <div class="banner-subtitle">SECURE COLLABORATIVE ANALYSIS PLATFORM</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">Confidential Data Clean Room</div>
+            <nav class="nav">
+                <a class="nav-item active" data-page="dashboard">ダッシュボード</a>
+                <a class="nav-item" data-page="analysis">データ分析</a>
+                <a class="nav-item" data-page="audit">監査ログ</a>
+                <a class="nav-item" data-page="reports">レポート</a>
+            </nav>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>TEE Secure</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboard">
+                <!-- Alert Section -->
+                <div class="alert-section">
+                    <div class="alert-card">
+                        <div class="alert-icon"></div>
+                        <div class="alert-content">
+                            <div class="alert-title">差分プライバシー閾値警告</div>
+                            <div class="alert-message">クエリID: QRY-2847 - 開示制御チェックが必要です</div>
+                        </div>
+                        <div class="alert-time">2分前</div>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="dashboard-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">処理ジョブ数</div>
+                        <div class="metric-value" id="jobCount">0</div>
+                        <div class="metric-change">+12.5% 前週比</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">データソース連携</div>
+                        <div class="metric-value" id="dataSourceCount">0</div>
+                        <div class="metric-change">3社 アクティブ</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">匿名化処理率</div>
+                        <div class="metric-value" id="anonRate">0<span style="font-size: 1.5rem;">%</span></div>
+                        <div class="metric-change">+2.3% 前月比</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">監査適合性</div>
+                        <div class="metric-value" id="auditScore">0<span style="font-size: 1.5rem;">%</span></div>
+                        <div class="metric-change">ISO27701準拠</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <div class="chart-title">
+                            データ処理量推移
+                            <span class="chart-badge">リアルタイム</span>
+                        </div>
+                        <canvas id="processingChart" height="250"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">
+                            業種別利用状況
+                            <span class="chart-badge">月次</span>
+                        </div>
+                        <canvas id="industryChart" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="chart-card">
+                    <div class="chart-title">最近のアクティビティ</div>
+                    <div class="audit-log">
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type join">結合処理</span>
+                                <span class="log-description">金融機関A × 医療機関B データセット結合完了</span>
+                            </div>
+                            <span class="log-timestamp" id="time1">--:--</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type aggregate">集計</span>
+                                <span class="log-description">クロスセクター分析 - 匿名化済みレコード 15,847件</span>
+                            </div>
+                            <span class="log-timestamp" id="time2">--:--</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type export">開示</span>
+                                <span class="log-description">差分プライバシー適用済み統計データ出力</span>
+                            </div>
+                            <span class="log-timestamp" id="time3">--:--</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type alert">監査</span>
+                                <span class="log-description">GDPR準拠性チェック完了 - 問題なし</span>
+                            </div>
+                            <span class="log-timestamp" id="time4">--:--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Analysis Page -->
+            <div class="page" id="analysis">
+                <div class="analysis-controls">
+                    <h2 style="color: #e4e9f0; margin-bottom: 1.5rem;">データ分析設定</h2>
+                    <div class="control-group">
+                        <div>
+                            <label class="control-label">データソースA</label>
+                            <select class="control-input" id="sourceA">
+                                <option>金融機関A - 取引データ</option>
+                                <option>医療機関B - 診療データ</option>
+                                <option>メーカーC - 購買データ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="control-label">データソースB</label>
+                            <select class="control-input" id="sourceB">
+                                <option>医療機関B - 診療データ</option>
+                                <option>金融機関A - 取引データ</option>
+                                <option>メーカーC - 購買データ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="control-label">分析期間</label>
+                            <select class="control-input">
+                                <option>直近3ヶ月</option>
+                                <option>直近6ヶ月</option>
+                                <option>直近1年</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="control-label">匿名化レベル</label>
+                            <select class="control-input">
+                                <option>k-匿名性 (k=5)</option>
+                                <option>差分プライバシー (ε=0.1)</option>
+                                <option>完全匿名化</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="startAnalysis()">分析実行</button>
+                </div>
+
+                <div class="processing" id="processingIndicator">
+                    <div class="spinner"></div>
+                    <div class="processing-text">TEE内でセキュア処理中...</div>
+                </div>
+
+                <div class="charts-section" id="analysisResults" style="display: none;">
+                    <div class="chart-card">
+                        <div class="chart-title">相関分析結果</div>
+                        <canvas id="correlationChart" height="250"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">セグメント分布</div>
+                        <canvas id="segmentChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Log Page -->
+            <div class="page" id="audit">
+                <div class="chart-card">
+                    <div class="chart-title">監査ログ - 完全なトレーサビリティ</div>
+                    <div class="audit-log">
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type join">結合処理</span>
+                                <span class="log-description">Job ID: JOB-8472 | 金融×医療データセット結合 | レコード数: 234,891</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 14:23:15 JST</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type aggregate">集計</span>
+                                <span class="log-description">Query ID: QRY-2847 | クロスセクター集計実行 | k-匿名性 k=5 適用</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 14:25:42 JST</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type alert">差分チェック</span>
+                                <span class="log-description">Disclosure Control: 閾値未満のセル検出 (n=3) - 自動抑制</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 14:26:08 JST</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type export">開示承認</span>
+                                <span class="log-description">Export ID: EXP-5921 | 3社承認完了 | 差分プライバシー ε=0.1</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 14:28:33 JST</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type join">データ投入</span>
+                                <span class="log-description">メーカーC 購買データ新規追加 | 暗号化済み | 158MB</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 13:45:12 JST</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type aggregate">監査レポート</span>
+                                <span class="log-description">月次コンプライアンスレポート自動生成 | ISO27701準拠確認</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 12:00:00 JST</span>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-info">
+                                <span class="log-type alert">アクセス監査</span>
+                                <span class="log-description">User: analyst@company-a.com | 閲覧権限検証 | MFA認証済み</span>
+                            </div>
+                            <span class="log-timestamp">2025-11-07 11:32:54 JST</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Page -->
+            <div class="page" id="reports">
+                <div class="report-section">
+                    <div class="report-header">
+                        <h2 class="report-title">コンプライアンス監査レポート</h2>
+                        <button class="btn" onclick="generateReport()">最新レポート生成</button>
+                    </div>
+                    
+                    <div class="report-content">
+                        <p><strong>生成日時:</strong> <span id="reportDate">2025-11-07 15:00:00 JST</span></p>
+                        <p><strong>対象期間:</strong> 2025年10月1日 - 2025年10月31日</p>
+                        <p><strong>監査基準:</strong> GDPR, EU Data Act, ISO27701, 個人情報保護法</p>
+
+                        <div class="report-section-title">1. エグゼクティブサマリー</div>
+                        <p>当月のデータクリーンルーム運用において、全てのデータ処理が規定のセキュリティ基準およびプライバシー保護要件を満たしていることを確認しました。TEE（Trusted Execution Environment）内での処理により、データ持出を完全に防止し、3社間のデータ結合・集計・匿名化処理を安全に実施しました。</p>
+
+                        <div class="report-section-title">2. 処理統計</div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>指標</th>
+                                    <th>件数</th>
+                                    <th>適合率</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>データ結合ジョブ</td>
+                                    <td id="reportJobs">247</td>
+                                    <td>100%</td>
+                                </tr>
+                                <tr>
+                                    <td>匿名化処理</td>
+                                    <td id="reportAnon">1,847,293</td>
+                                    <td>99.7%</td>
+                                </tr>
+                                <tr>
+                                    <td>差分プライバシー適用</td>
+                                    <td id="reportDP">156</td>
+                                    <td>100%</td>
+                                </tr>
+                                <tr>
+                                    <td>監査ログ記録</td>
+                                    <td id="reportLogs">3,482</td>
+                                    <td>100%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="report-section-title">3. セキュリティ評価</div>
+                        <p><strong>TEE整合性検証:</strong> 全処理セッションにおいてTEE環境の整合性を確認。不正アクセスやデータ漏洩の兆候は検出されませんでした。</p>
+                        <p><strong>アクセス制御:</strong> 多要素認証(MFA)により、権限者のみがシステムにアクセス。全アクセスログを記録し、異常なアクセスパターンは検出されませんでした。</p>
+                        <p><strong>暗号化:</strong> 保存データおよび転送データの全てにAES-256暗号化を適用。鍵管理はHSM（Hardware Security Module）により厳格に管理されています。</p>
+
+                        <div class="report-section-title">4. プライバシー保護</div>
+                        <p><strong>k-匿名性:</strong> 全出力データセットにおいてk≧5を保証。個人の再識別リスクを最小化しました。</p>
+                        <p><strong>差分プライバシー:</strong> 統計クエリにε=0.1の差分プライバシーを適用。個々のレコードからの情報漏洩を数学的に制限しました。</p>
+                        <p><strong>開示制御:</strong> 自動抑制機能により、閾値未満のセルを非開示とし、少数グループの保護を実現しました。</p>
+
+                        <div class="report-section-title">5. コンプライアンス状況</div>
+                        <p><strong>GDPR準拠:</strong> データ主体の権利（アクセス権、削除権、訂正権）を全て保証する仕組みを実装済み。</p>
+                        <p><strong>ISO27701認証:</strong> プライバシー情報マネジメントシステム（PIMS）の要件を全て満たしていることを外部監査により確認。</p>
+                        <p><strong>契約DPA:</strong> 各データ提供者との間でData Processing Agreementを締結し、責任範囲を明確化しています。</p>
+
+                        <div class="report-section-title">6. 推奨事項</div>
+                        <p>現在のセキュリティおよびプライバシー保護体制は高水準を維持していますが、以下の改善を推奨します：</p>
+                        <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                            <li style="margin-bottom: 0.5rem;">四半期ごとのペネトレーションテストの実施</li>
+                            <li style="margin-bottom: 0.5rem;">新規データソース追加時のリスクアセスメント強化</li>
+                            <li style="margin-bottom: 0.5rem;">ユーザー向けプライバシー教育プログラムの拡充</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                
+                this.classList.add('active');
+                const pageId = this.getAttribute('data-page');
+                document.getElementById(pageId).classList.add('active');
+            });
+        });
+
+        // Animated Metrics
+        function animateValue(id, start, end, duration, suffix = '') {
+            const obj = document.getElementById(id);
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                obj.textContent = Math.floor(current) + suffix;
+            }, 16);
+        }
+
+        // Initialize metrics animation after banner
+        setTimeout(() => {
+            animateValue('jobCount', 0, 247, 2000);
+            animateValue('dataSourceCount', 0, 8, 1800);
+            animateValue('anonRate', 0, 99.7, 2200);
+            animateValue('auditScore', 0, 100, 2500);
+        }, 3300);
+
+        // Update timestamps
+        function updateTimestamps() {
+            const now = new Date();
+            const times = [
+                { id: 'time1', offset: 2 },
+                { id: 'time2', offset: 8 },
+                { id: 'time3', offset: 15 },
+                { id: 'time4', offset: 32 }
+            ];
+            
+            times.forEach(time => {
+                const timestamp = new Date(now - time.offset * 60000);
+                document.getElementById(time.id).textContent = time.offset + '分前';
+            });
+        }
+        
+        setTimeout(updateTimestamps, 3300);
+
+        // Charts
+        let processingChart, industryChart, correlationChart, segmentChart;
+
+        function initCharts() {
+            // Processing Chart
+            const ctxProcessing = document.getElementById('processingChart').getContext('2d');
+            processingChart = new Chart(ctxProcessing, {
+                type: 'line',
+                data: {
+                    labels: ['10/1', '10/8', '10/15', '10/22', '10/29', '11/5', '11/7'],
+                    datasets: [{
+                        label: 'データ処理量 (GB)',
+                        data: [145, 182, 256, 234, 289, 312, 347],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(102, 126, 234, 0.1)' },
+                            ticks: { color: '#a8b2d1' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(102, 126, 234, 0.1)' },
+                            ticks: { color: '#a8b2d1' }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+
+            // Industry Chart
+            const ctxIndustry = document.getElementById('industryChart').getContext('2d');
+            industryChart = new Chart(ctxIndustry, {
+                type: 'doughnut',
+                data: {
+                    labels: ['金融', '医療', 'メーカー', '小売', 'その他'],
+                    datasets: [{
+                        data: [35, 28, 22, 10, 5],
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#4facfe',
+                            '#43e97b'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#a8b2d1', padding: 15 }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        setTimeout(initCharts, 3300);
+
+        // Real-time data update
+        setInterval(() => {
+            if (processingChart) {
+                const lastValue = processingChart.data.datasets[0].data[processingChart.data.datasets[0].data.length - 1];
+                const newValue = lastValue + Math.floor(Math.random() * 20) - 5;
+                
+                processingChart.data.datasets[0].data.push(newValue);
+                processingChart.data.labels.push('');
+                
+                if (processingChart.data.datasets[0].data.length > 10) {
+                    processingChart.data.datasets[0].data.shift();
+                    processingChart.data.labels.shift();
+                }
+                
+                processingChart.update('none');
+            }
+        }, 3000);
+
+        // Analysis Page
+        function startAnalysis() {
+            const processing = document.getElementById('processingIndicator');
+            const results = document.getElementById('analysisResults');
+            
+            processing.classList.add('active');
+            results.style.display = 'none';
+            
+            setTimeout(() => {
+                processing.classList.remove('active');
+                results.style.display = 'grid';
+                initAnalysisCharts();
+            }, 3000);
+        }
+
+        function initAnalysisCharts() {
+            // Correlation Chart
+            const ctxCorr = document.getElementById('correlationChart').getContext('2d');
+            correlationChart = new Chart(ctxCorr, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '相関スコア',
+                        data: Array.from({length: 50}, () => ({
+                            x: Math.random() * 100,
+                            y: Math.random() * 100
+                        })),
+                        backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                        borderColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(102, 126, 234, 0.1)' },
+                            ticks: { color: '#a8b2d1' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(102, 126, 234, 0.1)' },
+                            ticks: { color: '#a8b2d1' }
+                        }
+                    }
+                }
+            });
+
+            // Segment Chart
+            const ctxSeg = document.getElementById('segmentChart').getContext('2d');
+            segmentChart = new Chart(ctxSeg, {
+                type: 'bar',
+                data: {
+                    labels: ['セグA', 'セグB', 'セグC', 'セグD', 'セグE'],
+                    datasets: [{
+                        label: '件数',
+                        data: [12500, 19800, 8900, 15600, 11200],
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(102, 126, 234, 0.1)' },
+                            ticks: { color: '#a8b2d1' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(102, 126, 234, 0.1)' },
+                            ticks: { color: '#a8b2d1' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Generate Report
+        function generateReport() {
+            const now = new Date();
+            document.getElementById('reportDate').textContent = now.toLocaleString('ja-JP');
+            
+            // Animate report numbers
+            animateValue('reportJobs', 200, 247, 1500);
+            animateValue('reportAnon', 1500000, 1847293, 2000);
+            animateValue('reportDP', 120, 156, 1800);
+            animateValue('reportLogs', 3000, 3482, 2200);
+            
+            alert('最新の監査レポートを生成しました');
+        }
+    </script>
+</body>
+</html>
